@@ -18,32 +18,34 @@ const images = require('../model/ImagesModel')
 
 //handlebars
 
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-
-//routerUser.use("/photos", express.static("public/uploads"));
-
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-      folder: 'vnfood',
-      allowedFormats: ['jpg', 'png'],
-      filename: function (req, file, cb) {
-      },
-      public_id: (req, file) => {
-        return `photo-${Math.random()
-            .toString(16)
-            .substring(2)}`;
-      },
+const multerStorage = multer.diskStorage({
+    destination: (res, file, cb) => {
+        cb(null, "./public/uploads");
     },
-  });
+    filename: (req, file, cb) => {
+        let ext = file.originalname.split(".").pop();
+        cb(
+            null,
+            `photo-${Math.random()
+                .toString(16)
+                .substring(2)}.${ext}`
+        );
+    }
+});
 
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
 
-const uploadDefault = multer({ storage: storage });
-
-
-
+const uploadDefault = multer({
+    storage: multerStorage,
+    fileFilter: fileFilter
+});
 routerWeb.use(Passport.initialize());
 routerWeb.use(Passport.session());
 routerWeb.get('/', function (req, res) {
@@ -111,10 +113,10 @@ routerWeb.post('/create_product', uploadDefault.array('files'), (req, res1) => {
     });
     var image;
     req.files.forEach(async (item, index, array) => {
-        image = array[0].path;
+        image = array[0].filename;
         var imageProduct = images();
         imageProduct.imageId = uuid.v1();
-        imageProduct.url = item.path;
+        imageProduct.url = item.filename;
         imageProduct.productId = productId;
         await images.create(imageProduct, (err, res) => {
             if (err) res.status(404).json({statusCode: 404, err: 'Có lỗi xảy ra!'})
@@ -143,7 +145,7 @@ routerWeb.post('/create_cate', uploadDefault.single('file'), (req, res1) => {
     const cate = new cates(req.body);
     cate.cateId = uuid.v1();
     cate.name = req.body.name;
-    cate.images = req.file.path;
+    cate.images = req.file.filename;
     const nDate = new Date().toLocaleString('en-US', {
         timeZone: 'Asia/Ho_Chi_Minh'
     });
@@ -163,7 +165,7 @@ routerWeb.post('/update_product', uploadDefault.single('file'), (req, res) => {
 
     var image;
     try {
-        image = req.file.path
+        image = req.file.filename
     } catch (e) {
         image = req.body.image;
 
@@ -194,7 +196,7 @@ routerWeb.post('/update_cate', uploadDefault.single('file'), (req, res) => {
 
     var image;
     try {
-        image = req.file.path
+        image = req.file.filename
     } catch (e) {
         image = req.body.image;
 

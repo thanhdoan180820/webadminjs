@@ -12,10 +12,7 @@ let generateToken = (user) => {
             SECRET_KEY,
             {
                 algorithm: "HS256",
-<<<<<<< HEAD
                 expiresIn:   60 * 60,
-=======
->>>>>>> 8122bd8e810ffe735ae3572bebe8ac8c2e6b3086
             },
             (error, token) => {
                 if (error) {
